@@ -7,12 +7,10 @@ int main(int argc, char const *argv[])
 {
     Dual_PIPE DP(PIPE_R, PIPE_W);
 
-    std::function<void(const char *)> p = [](const char *get) {
+    DP.Recive_Callback = [](const char *get) {
         std::cout << "Recived a message!";
         std::cout << get;
     };
-
-    DP.Recive_Callback = p;
 
     return 0;
 }

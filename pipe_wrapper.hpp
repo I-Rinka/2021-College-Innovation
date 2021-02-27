@@ -10,6 +10,8 @@
 #include <iostream>
 #ifndef PIPE_WRAPPER_HPP
 #define PIPE_WRAPPER_HPP
+
+#define PIPEMODE (S_IRUSR | S_IWUSR)
 class Dual_PIPE
 {
 private:
@@ -29,18 +31,24 @@ private:
         }
         else
         {
-            printf("it will call back!\n");
             char len[10];
+
             read(fd_recive_pipe, len, 10);
-            std::cout << len << std::endl;
+            /*
+
+            //debug
+
             int read_len = atoi(len);
+            std::cout << read_len << std::endl;
 
             char *buffer = (char *)malloc(read_len);
             read(fd_recive_pipe, buffer, read_len);
+            // std::cout <<  << std::endl;
 
-            this->Recive_Callback(buffer);
-
+            printf("it will call back!\n");
             free(buffer);
+            */
+            this->Recive_Callback(len);
         }
         async_Read();
     }
@@ -48,7 +56,13 @@ private:
     void async_thread()
     {
         //这个切忌不能换位置！
-        this->fd_recive_pipe = open(recive_pipe_path, O_RDONLY);
+        std::cout << this->recive_pipe_path << std::endl;
+        this->fd_recive_pipe = open(this->recive_pipe_path, O_RDONLY);
+
+        if (this->fd_recive_pipe <= -1)
+        {
+            perror("PIPE NOT OPEN!\n");
+        }
         async_Read();
     }
 
@@ -104,7 +118,7 @@ Dual_PIPE::~Dual_PIPE()
 
 Dual_PIPE::Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path)
 {
-    mode_t FIFO_MOD = 0777;
+    mode_t FIFO_MOD = PIPEMODE;
 
     if (access(send_pipe_path, R_OK) < 0)
     {
