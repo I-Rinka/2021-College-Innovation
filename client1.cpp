@@ -1,8 +1,8 @@
 #include <iostream>
 #include <string.h>
 #include "pipe_wrapper.hpp"
-#define PIPE_W "/tmp/T_PIPE1"
-#define PIPE_R "/tmp/T_PIPE2"
+#define PIPE_W "/tmp/T1"
+#define PIPE_R "/tmp/T2"
 int main(int argc, char const *argv[])
 {
     Dual_PIPE DP(PIPE_W, PIPE_R);

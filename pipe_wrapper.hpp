@@ -34,7 +34,6 @@ private:
             char len[10];
 
             read(fd_recive_pipe, len, 10);
-            /*
 
             //debug
 
@@ -47,8 +46,7 @@ private:
 
             printf("it will call back!\n");
             free(buffer);
-            */
-            this->Recive_Callback(len);
+            this->Recive_Callback(buffer);
         }
         async_Read();
     }
@@ -79,7 +77,7 @@ public:
         }
         else
         {
-
+            // write(fd_send_pipe, "hello", sizeof("hello"));
             char len[10];
             int write_lengh = strnlen(input, msg_restrict);
             snprintf(len, 10, "%9d", write_lengh);
