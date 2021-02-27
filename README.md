@@ -24,3 +24,5 @@ make demo
 2. `client_write.out`运行C++程序的进程
 3. `python3 /process/pipe_demo.py`运行python进程
 4. 在C++的`client_write.out`进程的终端进行输入，再在`python`的终端中查看输出
+
+其整体实现想法与地空通信的network部分相似：接收线程阻塞，进行异步通信；写线程总是同步写入数据
