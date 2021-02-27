@@ -32,35 +32,43 @@ private:
         else
         {
             char len[10];
-
+            //读数据包长度
             read(fd_recive_pipe, len, 10);
 
             //debug
 
             int read_len = atoi(len);
-            std::cout << read_len << std::endl;
 
             char *buffer = (char *)malloc(read_len);
-            read(fd_recive_pipe, buffer, read_len);
-            // std::cout <<  << std::endl;
+            int size = read(fd_recive_pipe, buffer, read_len);
+            this->Recive_Callback(buffer, size);
 
-            printf("it will call back!\n");
             free(buffer);
-            this->Recive_Callback(buffer);
+            if (size == 0)
+            {
+                //断开连接处理
+            }
+            else
+            {
+                async_Read();
+            }
         }
-        async_Read();
     }
 
     void async_thread()
     {
-        //这个切忌不能换位置！
-        std::cout << this->recive_pipe_path << std::endl;
-        this->fd_recive_pipe = open(this->recive_pipe_path, O_RDONLY);
+        //使用路径法
+        if (this->recive_pipe_path != NULL)
+        {
+            this->fd_recive_pipe = open(this->recive_pipe_path, O_RDONLY);
+        }
 
         if (this->fd_recive_pipe <= -1)
         {
             perror("PIPE NOT OPEN!\n");
         }
+
+        //这个和open处切忌不能换位置！
         async_Read();
     }
 
@@ -68,7 +76,8 @@ public:
     Dual_PIPE(int send_pipe_fd, int recive_pipe_fd);
     Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path);
     ~Dual_PIPE();
-    std::function<void(const char *)> Recive_Callback;
+    std::function<void(const char *, int recive_size)> Recive_Callback = [](const char *, int recive_size) {};
+    std::thread *hosting_thread = NULL;
     void Write(const char *input)
     {
         if (this->fd_send_pipe <= -1)
@@ -77,17 +86,16 @@ public:
         }
         else
         {
-            // write(fd_send_pipe, "hello", sizeof("hello"));
             char len[10];
             int write_lengh = strnlen(input, msg_restrict);
             snprintf(len, 10, "%9d", write_lengh);
-            // printf("writing..%s\n",len);
             write(fd_send_pipe, len, 10);
             write(fd_send_pipe, input, write_lengh);
         }
     }
 };
 
+//不推荐使用这个
 Dual_PIPE::Dual_PIPE(int send_pipe_fd, int recive_pipe_fd)
 {
 
@@ -135,10 +143,9 @@ Dual_PIPE::Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path)
 
     strncpy(this->send_pipe_path, send_pipe_path, strnlen(send_pipe_path, name_restrict));
     strncpy(this->recive_pipe_path, recive_pipe_path, strnlen(recive_pipe_path, name_restrict));
-    // std::thread *thread = new std::thread([this](){});
 
-    std::thread *t = new std::thread([this]() { this->async_thread(); });
-    this->fd_send_pipe = open(send_pipe_path, O_WRONLY); //因为写是同步的，因此先把写端开了
+    this->hosting_thread = new std::thread([this]() { this->async_thread(); });
+    this->fd_send_pipe = open(send_pipe_path, O_WRONLY); //因为写是同步的，因此先把写端开了，这个和上面托管线程切忌不能换位置！
 }
 
 #endif
