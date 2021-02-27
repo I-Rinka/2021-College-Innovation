@@ -46,6 +46,7 @@ private:
             free(buffer);
             if (size == 0)
             {
+                this->pipe_closed = true;
                 //断开连接处理
             }
             else
@@ -78,6 +79,7 @@ public:
     ~Dual_PIPE();
     std::function<void(const char *, int recive_size)> Recive_Callback = [](const char *, int recive_size) {};
     std::thread *hosting_thread = NULL;
+    bool pipe_closed = false;
     void Write(const char *input)
     {
         if (this->fd_send_pipe <= -1)
@@ -145,6 +147,8 @@ Dual_PIPE::Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path)
     strncpy(this->recive_pipe_path, recive_pipe_path, strnlen(recive_pipe_path, name_restrict));
 
     this->hosting_thread = new std::thread([this]() { this->async_thread(); });
+
+    //注：如果管道进程一直没有进程连接，则会阻塞
     this->fd_send_pipe = open(send_pipe_path, O_WRONLY); //因为写是同步的，因此先把写端开了，这个和上面托管线程切忌不能换位置！
 }
 
