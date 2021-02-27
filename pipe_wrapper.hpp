@@ -8,7 +8,8 @@
 #include <functional>
 #include <thread>
 #include <iostream>
-
+#ifndef PIPE_WRAPPER_HPP
+#define PIPE_WRAPPER_HPP
 class Dual_PIPE
 {
 private:
@@ -17,8 +18,8 @@ private:
     /* data */
     int fd_send_pipe = 0;
     int fd_recive_pipe = 0;
-    char *send_pipe_name;
-    char *recive_pipe_name;
+    char *send_pipe_path;
+    char *recive_pipe_path;
 
     void async_Read()
     {
@@ -28,6 +29,7 @@ private:
         }
         else
         {
+            printf("it will call back!\n");
             char len[10];
             read(fd_recive_pipe, len, 10);
             std::cout << len << std::endl;
@@ -43,8 +45,16 @@ private:
         async_Read();
     }
 
+    void async_thread()
+    {
+        //这个切忌不能换位置！
+        this->fd_recive_pipe = open(recive_pipe_path, O_RDONLY);
+        async_Read();
+    }
+
 public:
     Dual_PIPE(int send_pipe_fd, int recive_pipe_fd);
+    Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path);
     ~Dual_PIPE();
     std::function<void(const char *)> Recive_Callback;
     void Write(const char *input)
@@ -80,4 +90,43 @@ Dual_PIPE::~Dual_PIPE()
     close(this->fd_send_pipe);
     close(this->fd_recive_pipe);
 
+    if (this->send_pipe_path != NULL)
+    {
+        unlink(this->send_pipe_path);
+        free(this->send_pipe_path);
+    }
+    if (this->recive_pipe_path != NULL)
+    {
+        unlink(this->recive_pipe_path);
+        free(this->recive_pipe_path);
+    }
 }
+
+Dual_PIPE::Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path)
+{
+    mode_t FIFO_MOD = 0777;
+
+    if (access(send_pipe_path, R_OK) < 0)
+    {
+        // 创建一个pipe
+        mkfifo(send_pipe_path, FIFO_MOD);
+    }
+
+    if (access(recive_pipe_path, R_OK) < 0)
+    {
+        // 创建一个pipe
+        mkfifo(recive_pipe_path, FIFO_MOD);
+    }
+
+    this->send_pipe_path = (char *)malloc(strnlen(send_pipe_path, name_restrict));
+    this->recive_pipe_path = (char *)malloc(strnlen(recive_pipe_path, name_restrict));
+
+    strncpy(this->send_pipe_path, send_pipe_path, strnlen(send_pipe_path, name_restrict));
+    strncpy(this->recive_pipe_path, recive_pipe_path, strnlen(recive_pipe_path, name_restrict));
+    // std::thread *thread = new std::thread([this](){});
+
+    std::thread *t = new std::thread([this]() { this->async_thread(); });
+    this->fd_send_pipe = open(send_pipe_path, O_WRONLY); //因为写是同步的，因此先把写端开了
+}
+
+#endif
