@@ -47,7 +47,7 @@ private:
             if (size == 0)
             {
                 this->pipe_closed = true;
-                //断开连接处理
+                //没读到数据包，当作断开处理？
             }
             else
             {
@@ -58,7 +58,6 @@ private:
 
     void async_thread()
     {
-        //使用路径法
         if (this->recive_pipe_path != NULL)
         {
             this->fd_recive_pipe = open(this->recive_pipe_path, O_RDONLY);
@@ -146,6 +145,7 @@ Dual_PIPE::Dual_PIPE(const char *send_pipe_path, const char *recive_pipe_path)
     strncpy(this->send_pipe_path, send_pipe_path, strnlen(send_pipe_path, name_restrict));
     strncpy(this->recive_pipe_path, recive_pipe_path, strnlen(recive_pipe_path, name_restrict));
 
+    //异步线程的读管道打开，再打开主线程的写管道
     this->hosting_thread = new std::thread([this]() { this->async_thread(); });
 
     //注：如果管道进程一直没有进程连接，则会阻塞
